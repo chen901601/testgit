@@ -1,4 +1,5 @@
 import requests,json,os
+
 curpath = os.path.dirname(os.path.realpath(__file__))
 filename = os.path.join(curpath,'data.txt')
 
