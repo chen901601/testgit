@@ -1,0 +1,416 @@
+
+
+合规的所有状态：WAIT("待提交"),BEGIN("审核中"),BACK("打回"),YES("合格"),NO("不合格"),OVER("完成归档"),NO_REVIEWER("无需审查"),CANCEL("会议取消");  合规字段：qualifiedStatus
+合规状态=WAIT("待提交"),BACK("打回")时可以变更议程
+合规状态= BEGIN("审核中")，YES("合格"),NO("不合格"),OVER("完成归档"),
+
+PC端活动合规状态：complianceState
+1、四种状态：无需审查、未审查、合规通过、合规不通过；
+2、活动立项时选择需要签到，则合规状态为“未审查”，且合规状态会根据会议发生变化；
+NO_REVIEWER("无需审查"),
+    WAIT("未审查"),
+    PASS("合规通过"),
+    FAIL("合规不通过")
+a.会议审查打回-未审查；
+b.会议审查通过-合规通过；
+c.会议审查废弃-合规不通过。
+
+
+select id, qualifiedStatus, qualifiedTime, qualifiedEmployeeId from cms_action.action_meet;#查找会议的合规状态
+qualifiedStatus #合规状态
+qualifiedTime   #合规时间
+qualifiedEmployeeId   #合规人
+
+select * from act_area_scope#职位对应可以选择的活动类型
+select * from cms_hr.basic_post#职位id对应的职位
+ 
+    AREA("跨省区活动"),
+    PROVINCE("单省区活动"),
+    CITY("跨地区活动"),
+    SINGLE_CITY("单地区活动");
+
+
+ MEET_IN("内部会议"),
+    //MEET_OUT("外部会议");
+    MEET_OUT_ONLINE("外部线上会议"),
+    MEET_OUT_OFFLINE_ACT("外部线下会议（区域活动）"),
+    MEET_OUT_OFFLINE_ACT_HQ("外部线下会议（总部活动）"),
+    MEET_OUT_OFFLINE_BUS("外部线下会议（业务）"),
+    LIVE_BROADCAST("直播"),
+    RECORDED_BROADCAST("视频"),
+    TINY_SCHOOL("专业讲堂"),
+    CASE_DISCUSSION("病例讨论");
+	
+更改工作流：
+select * from sys_workflow_process where moduleId = 'AREA_ACT' and processStatus in ('WAIT','AUDIT_BEGIN')
+and workflowId in (select id from sys_workflow_config where moduleId = 'AREA_ACT' and valid = 0);
+
+select * from sys_workflow_config where moduleId = 'AREA_ACT' and valid = 0;#valid = 0是不可用的工作流，valid = 1是可用的工作流
+	
+2.5.0版本议程后台配置表
+act_agenda_type_setting,act_agenda_type_meet_role  前面是议程类型，后面是议程类别关联角色
+select * from cms_act.act_agenda_type_setting; #议程类别表
+select * from cms_act.action_meet_role;#议程角色表
+select * from cms_act.act_agenda_type_meet_role; #议程类别关联角色表
+
+活动关联议程查询：
+select *from cms_act.act_agenda where sourceId=17508;#活动议程表
+select * from cms_act.act_agenda_session where agendaId=822;#议程场次表
+select * from cms_act.act_agenda_session_detail where agendaSessionId=1357;#活动议程场次明细  agendaSessionId 关联场次id   agendaId 关联议程id
+select * from cms_act.act_agenda_session_detail_related where agendaId=822 ;#议程关联人    场次明细id=sessionDetailId  场次id=sessionId 议程id=agendaId  关系人id=relateId
+select * from cms_act.act_area where name='草稿状态';#meetClassId
+
+查询可用的药企圈会务活动：
+select *from cms_action.action_conference order by id desc;
+
+议程变更后的客户或者同事在会议列表都不删除，但是状态由原来的嘉宾变为观众（数据库查看）
+select manId,manName,roleType,manType from action_meet_attendee where meetId=264663;
+	GUEST("嘉宾"),
+    VIEWER("观众");
+    CUSTOM("客户"),
+    COLLEAGUE("同事");
+	
+#以区域活动id为查询条件，去看变更议程变更人员标识
+select d.manId,d.manName,d.roleType,d.manType from cms_act.act_area a,cms_action.action_task b,cms_action.action_meet c,cms_action.action_meet_attendee d  where a.id=b.sourceId and b.id=c.taskId and c.id=d.meetId 
+and b.taskSourceType='AREA_ACT' and a.id=17613;
+
+having 前面要配合groub by使用
+select b.activityId from act_hq a LEFT JOIN act_hq_budgetdetail b ON a.id=b.activityId  where 
+b.activityId in (select sourceId from cms_action.action_task where `status`='OVER' and realMoney>0 and taskType='CONFERENCE' and createTime>'2019-01-01')  
+GROUP BY b.activityId HAVING count(b.id)>1;
+
+查看活动有借款、还款的
+select * from cms_finance.finance2_payment_budgetdetail where paymentId in ( select sourceId from cms_finance.finance_annual_paylimit_record where recordType='RETURN' and sourceType='PAYMENT')
+union all 
+select * from cms_finance.finance2_paymentdoctor_budgetdetail where paymentdoctorId in (select sourceId from cms_finance.finance_annual_paylimit_record where recordType='RETURN' and sourceType='PAYMENTDOCTOR')
+
+SELECT SUM(adjustMoney) from cms_finance.finance_annual_paylimit_record where sourceId  in (
+select paymentId from cms_finance.finance2_payment_budgetdetail where rootBillId=17804 and rootBillType='AREA_ACT'
+union all 
+select paymentdoctorId from cms_finance.finance2_paymentdoctor_budgetdetail where rootBillId=17804 and rootBillType='AREA_ACT') and recordType='DEDUCT';
+
+SELECT SUM(adjustMoney) from cms_finance.finance_annual_paylimit_record where sourceId  in (
+select paymentId from cms_finance.finance2_payment_budgetdetail where rootBillId=17804 and rootBillType='AREA_ACT'
+union all 
+select paymentdoctorId from cms_finance.finance2_paymentdoctor_budgetdetail where rootBillId=17804 and rootBillType='AREA_ACT') and recordType='RETURN';
+	DEDUCTED("已扣款"),
+    WAITDEDUCT("待扣款"),
+    NOTDEDUCT("无需扣款");
+
+
+任务状态：
+	NOTSTART("未开始"),PROCESS("执行中"),WAIT_CONFIRM("待确认"),OVER("已结束"),CANCEL("任务被取消");
+
+报销任务关联表：cost_expense_task
+任务Id taskId  关联任务
+报销Id  expenseAccountId  关联下面的报销申请单据表，就是下面报销申请表的id
+通过这两个表（cost_expense_task，cost_expense_account）查出报销申请单和任务的关联，这两个表都在cms_finance库
+报销申请单据表：cost_expense_account	
+报销单的状态：
+    Draft("草稿"),
+    Wait("待审核"),
+    Audit_Begin("审核中"),
+    Back("打回"),
+    Fail("审核不通过"),
+    Pass("审核通过"),
+    Pause("挂起"),
+    Over("终止");
+	
+	
+select * from cms_action.action_task_doctor_contract;#合同表
+	DRAFT("合同草稿"),//纸质合同
+    NOSEND("未发送合同"),
+    SENDED("已发送合同"),
+    SIGNED("已签合同"),
+    SUBMIT("已申请付款"),//电子合同
+    AUDITING("审批中"),//纸质合同
+    PASS("审批通过"),//纸质合同
+    ABNORMAL_SIGN("异常签到"),//电子合同
+    WAIT_REMIT("待汇款"),
+    REMITTING("汇款中"),
+    PAYED("已汇款"),
+    REMIT_FAIL("汇款失败"),//app支付
+    DISCARD("废弃"),
+    FAIL("审批不同意");//纸质合同
+	
+select * from cms_finance.finance2_payment_doctor where sourceId= #汇款单  sourceId合同id
+	
+#费用计划的品种组单价未导入，请联系技术支持处理
+品种组单价导入sql：
+select * from cms_hr.basic_department where `name` = '辽宁区域';-- 254
+select * from cms_basic.basic_breed_group where goodsName = '黛力新'; -- 6
+select * from cost_plan_breed_group_price;#添加品种组单价数据，需要对应的部门id和品种id
+
+
+报销单状态：
+select * from cms_finance.cost_expense_account;
+auditStatus   报销状态
+	Draft("草稿"),
+    Wait("待审核"),
+    Audit_Begin("审核中"),
+    Back("打回"),
+    Fail("审核不通过"),
+    Pass("审核通过"),
+    Pause("挂起"),
+    Over("终止");
+	
+任务来源：
+	AREA_ACT("区域活动"),
+    HQ_ACT("总部活动"),
+    COST_APPLY("预算申请");
+	
+任务类型：
+	GENERAL("日常"),
+    TRAVEL("差旅"),
+    CONFERENCE("会务"),#药企圈子任务
+    MEET("会议");#总部、区域线下线上，不管需不需签到的都属于会议
+	
+任务中的会议类型：
+	MEET_IN("内部会议"),
+    MEET_OUT_ONLINE("线上会议"),
+    MEET_OUT_OFFLINE("线下会议"),
+    MEET_DOCTOR_ORG("医生圈会议");
+	
+select * from cms_finance.cost_expense_recheck_barcode where companyId=1 and isUsed='NO';#获取提交报销复审底单二维码
+
+查询合同和合同关联的汇款单
+select b.createTime,b.doctorName,b.state,b.id '合同',a.id '变更单' from cms_action.contract_extend_agreement a INNER JOIN cms_action.action_task_doctor_contract b on a.contractId=b.id ;
+
+
+action_performance_employee_history  人员历史考评数据
+action_performance_bonus_manage   奖金管理表
+
+查找医生客户信息：
+select idCard from cms_customer.basic_doctor where id = 7025;
+
+
+查询会议校验医生相应活动类型下的医生份数配置表信息
+
+-- 会议id查询活动类型
+select meetClassId from action_meet where id=265357;
+
+-- 配置表id
+select distinct a.id from contract_laborCost_config a inner join contract_laborCost_activity_class_config b on a.id=b.laborCostsConfigId  where activityClassId =378;
+
+-- 配置信息
+select * from contract_laborCost_config where id=27;
+
+-- 查询合同信息
+select state,id,createTime,meetClassId,sourceId from action_task_doctor_contract where idCard='3607368990' AND meetClassId in(
+select a.activityClassId from contract_laborCost_activity_class_config a  where a.laborCostsConfigId =27) and state not in('DISCARD','DRAFT') and createTime>'2020-01-01';
+
+select * from cms_customer.basic_doctor where bankRealName = '黄小可';#idCard  6da7c5ccee4b4aac1a9c12e60bd30dd8  黄小乐的证件号3d10f5b3425ca18c14220bbc59b33e88 type=IDCARD
+select * from cms_customer.basic_doctor where bankRealName = '侯晓华';  73a19885a67608663499d11af602ad07  id=201709228155
+select * from cms_customer.basic_doctor where bankRealName = '潘勤聪';  2a4bdcc1cf584ebf83baa986836618a0  id=201709401008
+
+
+select * from cms_basic.basic_equipment where id =23;  插入医视圈设备编号
+
+线上会议视频审查抽取表，同一批会议视频的，要同时审批通过后才会往下一级推送
+select * from cms_action.action_meet_audit_detail where batchNo = 'P200108LNQY254' order by id desc;
+会议视频审查单据推送抽取配置表
+select * from cms_action.action_meet_audit_ratio;
+
+添加和删除功能权限
+-- 1、先在菜单表找到对应的菜单ID  13041687
+select * from cms_basic.sys_menu WHERE name = '工资条列表';
+-- 1.1、岗位薪酬明细列表下面的按钮
+select * from cms_basic.sys_menu where parentId = 13041224;
+-- 2、再从角色表中找到有加的角色ID  135
+select * from cms_basic.sys_role where name ='梅子测试总部费用预算专用';
+-- 3、在菜单角色表中添加对应的数据
+select * from cms_basic.sys_role_menu where roleId = 135 and menuId = 13041687;
+select * from cms_basic.sys_role_menu where roleId = 135 and menuId = 13041688;
+
+查询taskId字段值出现过2次的taskId值
+select taskId from cms_action.action_task_company group by taskId HAVING count(*)>=2;
+
+会议抽取日期swagger
+http://192.168.8.112:18004/swagger-ui.html#!/test-meet-controller/meetVideoExtractUsingGET
+test-meet-controller : 会议测试接口→/meet/test/meetVideoExtract→date
+
+会议预约视频表
+select * from action_meet_telecon_reserved where planBeginTime like '2020-02-23%' order by planBeginTime desc;
+是否被抽中录制视频字段videoCode，未开始抽取时，默认为空，开始抽取后，抽中的为1，未抽中的为0
+活动审批通过后，需要执行预约会议的作业，表action_meet_telecon_reserved的status=success，vidercode才会=0，没执行作业时，vidercode=null
+被抽中的 videoCode=1
+抽取比例配置表： ratio字段（已经是百分比转换为小数了）
+select * from action_meet_video_ratio;
+
+存放视频文件表：
+action_meet_telecon_video（会议详情页面的【刷新】按钮，只会刷新会议的视频文件，而且需要有前置条件，首先是需要录制的，然后是该会议关联的视频文件表不能有文件。）
+
+查询医生圈自审状态：
+select selfAuditStatus from action_meet where id=265599;
+
+与会人员表：
+action_meet_attendee
+
+张正辉本机swagger：
+http://192.168.3.62:18004/swagger-ui.html#!/test-meet-controller/getTimeTestUsingGET
+
+配置视频会议参会观众必须满足的时长表：
+select * from action_meet_join_time_limit;
+
+视频会有参会人员时长表：
+select * from action_meet_telecon_detail where meetId=265652;
+
+#与会人员表数据库插入数据：（说明：version=100代表是数据库插入数据）
+select * from action_meet_attendee order by id desc; #注意查出最大的自增id
+#manId就是cms_customer.basic_doctor表的id
+INSERT INTO `cms_action`.`action_meet_attendee`(`id`, `version`, `createTime`, `updateTime`, `creatorId`, `updaterId`, `hospitalId`, `isInvite`, `isJoin`, `isSign`, `latitude`, `longitude`, `manId`, `manName`, `manType`, `meetId`, `sectionOfficeId`, `signAddr`, `signDate`, `signMacId`, `signStatus`, `signType`, `roleType`, `inviteDate`, `adminGrade`, `isChief`, `signStatusReason`, `lecturerLevel`, `deviceType`, `sponsorOpenId`, `proofState`) VALUES (320800, 100, '2020-03-01 13:11:16', '2020-03-01 13:15:42', 415, NULL, 1509008146213, 'NO', 'YES', NULL, NULL, NULL, 201709444205, '林国敏', 'CUSTOM', 265657, 67, NULL, '2020-03-01 13:15:42', NULL, NULL, NULL, 'VIEWER', '2020-03-01 13:11:16', NULL, NULL, NULL, 'AREA', NULL, NULL, 1);
+
+
+#参会时长表数据插入（说明：version=100的代表是数据库插入的数据）
+select * from `cms_action`.`action_meet_telecon_detail` order by id desc;#注意查出最大的自增id
+#memberOpenId就是cms_customer.basic_doctor表的openId
+INSERT INTO `cms_action`.`action_meet_telecon_detail`(`id`, `version`, `dataPartnerType`, `hospitalId`, `joinTime`, `memberName`, `memberOpenId`, `phoneType`, `sectionOfficeId`, `teleconId`, `unJoinTime`, `meetId`, `createTime`, `updateTime`, `creatorId`, `updaterId`, `deviceType`) VALUES (127142, 0, 'DoctorOrg', 200108220742, '2020-03-01 13:18:58', '凌素芬', 'db9f8748130e4afd849e6f4c70396d20', 'Network', 9, 26376, '2020-03-01 13:21:52', 265657, '2020-03-01 13:20:03', '2020-03-01 13:28:03', -1, -1, 'ANDROID');
+
+提交合规审查时，实际劳务占比计算规则：
+线上会议：有效合同/已举证的参加视频会议的人数 (已举证是查医生基础数据的举证状态proofState=1，人员是查与会人员表的人员，manType='CUSTOM' and isJoin='YES'
+线下会议：线下就是有效合同/已举证的签到人数
+
+合规审核时，那些角色配为有效合同配置表：
+select * from contract_role_config;
+
+医生圈会议提交合规审查，提示医院科室举证人数不足时怎么去查看？
+通过会议id，去查找select bizId from contract_dachen_relate where meetId=265670;（同步大辰人员表）
+??查到bizId后，再去select * from contract_browse_doctor where meetId=265670;（浏览人员表）查看浏览人员的bizId是否都为同步大辰的bizId，
+  若相同，则去医生表（cms_customer.basic_doctor）这些浏览人数的医院、科室、举证状态：hospitalId,sectionOfficeId,proofState。proofState=1为已举证
+  
+  
+玄关扶持后台配置表：
+select * from dragon_act.support_award_config;
+select * from dragon_act.support_live_config;
+select * from dragon_act.support_apply;
+select * from dragon_act.support_apply_subject;
+select * from dragon_act.support_apply_speaker;
+
+玄关扶持合同状态：
+SENDED("已发送合同"),
+    SIGNED("已签合同"),
+    CONTENT_YES("内容审核通过"),
+    TAXATION("已计税"),
+    SUBMIT("已申请付款"),
+    WAIT_REMIT("待汇款"),
+    REMITTING("汇款中"),
+    PAYED("已汇款"),
+    REMIT_FAIL("汇款失败"),
+    DISCARD("废弃");
+	
+2.8版本后飞检状态： 新的飞检表：flychk2_act：表中status是飞检状态字段
+Flychk2Status {
+    EXECUTE_WAIT("待执行"),
+    EXECUTE_UNDERWAY("执行中"),
+    RECHECK_WAIT("待复核"),
+    RECHECK_UNDERWAY("复核中"),
+    RESULT_WAIT_CONFIRM("待确认飞检结论"),
+    APPEAL_UNDERWAY("申诉中"),
+    COMPLETE("已结束"),
+    NOT_DO("未执行"), #新飞检没有这样状态
+    MEET_CANCEL("会议已取消");#新飞检没有这样状态
+	
+玄关平台配置预算类型科目：
+# 使用场景已经配置好 直播活动 SUPPORT 无需再配
+# 费用类型表 使用场景字段配置SUPPORT
+select * from cost_basic_budget_type;
+# 一级工作项目 useScenes 这个字段就是使用场景要是SUPPORT
+select * from cost_basic_first_work_project where id = 19;
+# 二级工作项目 一级和二级公司要一致，firstProjectId就是一级工作项目的id hasLimit是否受部门控制
+select * from cost_basic_second_work_project where id = 75;
+# 二级工作项目关联费用类别表 注意：此地方控制选择费用类别 同时如果需要科目需要费用类别配置公司科目配置表
+select * from cost_basic_second_work_project_costtype;
+# 二级工作项目关联部门表 如果二级工作项目中hasLimit 为 1 则需要在此表中配置部门
+select * from cost_basic_second_work_project_department;
+
+
+如何数据添加费用科目：
+select * from dragon_finance.basic_cost_subject_config; #费用科目配置表  
+#typeId字段，通过select * from dragon_finance.basic_cost_type where useUsage='SUPPORT'查询到的id  
+#subjectId 通过select * from dragon_finance.basic_cost_subject where typeId查到页面已经添加的费用科目的id
+select * from dragon_finance.basic_cost_type where useUsage='SUPPORT';
+select * from dragon_finance.basic_cost_subject where typeId=37;  
+
+玄关扶持直播单据的状态：
+	DRAFT("草稿"),
+    BACK("打回"),
+    WAIT("待审核"),
+    AUDIT_BEGIN("审核中"),
+    PASS("审核通过"),
+    FAIL("审核不通过");
+	
+玄关直播信息：
+select * from dragon_customer.cus_doctor; #玄关医生基础表
+select * from action_contract_dachen;   #大辰直播任务表
+select * from action_contract_live_doctor  #玄关直播参与医生表
+内容审核表 action_task_live
+内容审核状态：
+	WAIT("待提交"),
+    AUDIT("审核中"),
+    NO("不通过"),
+    YES("通过");
+	
+玄关扶持直播任务金额字段：
+	@ApiModelProperty("初始预算金额")
+	private BigDecimal initBudgetMoney;
+	@ApiModelProperty("实际预算金额")
+	private BigDecimal realMoney;
+	@ApiModelProperty("任务实际预算金额")
+	private BigDecimal taskRealMoney;
+	@ApiModelProperty("劳务费金额")
+	private BigDecimal meetRealMoney;
+	@ApiModelProperty("已分配子任务额度")
+	private BigDecimal subUsedMoney;
+	
+	
+财务模块初始数据的配置：（2020-03财务支付分析报表」对账数据不存在，请先线下沟通创建「财务支付分析报表」账本后才能进行确认操作）
+解决方案：select * from finance_close_account;在这个表插入一条数据。
+
+玄关扶持合同表和合同状态：
+select state from action_contract where sourceId=360;
+ SENDED("已发送合同"),
+    SIGNED("已签合同"),
+    CONTENT_YES("内容审核通过"),
+    TAXATION("已计税"),
+    SUBMIT("已申请付款"),
+    WAIT_REMIT("待汇款"),
+    REMITTING("汇款中"),
+    PAYED("已汇款"),
+    REMIT_FAIL("汇款失败"),
+    DISCARD("废弃");
+	
+汇款单反查合同id：
+select * from dragon_finance.doctor_batch_remit; -- 申请审核批次
+select * from dragon_finance.doctor_income_apply_tax; -- 计税
+select * from dragon_finance.doctor_tax_batch; -- 计税和批次的关系
+select * from dragon_finance.doctor_income_apply; -- 申请表
+
+select id,remnantMoney,memo from cms_cost.cost_apply_plan where id = 414317; #跨年度预算申请的数据
+
+区域活动线上会议录制视频点击/赋值链接记录表
+select * from act_area_video_operate_record;
+
+
+给员工增加品种管理：
+select * from sys_employee_breed where employeeId = 416 ;
+select * from cms_basic.basic_breed_group;
+
+客户分类
+select customerClassify from cms_customer.basic_doctor_breedgroup;
+	SPEAKER("现有讲者"),
+    GURU_SPEAKER("大咖+现有讲者"),
+    GURU("大咖"),
+    GURU_TRAINSPEAKER("大咖+待培养讲者"),
+    TRAINSPEAKER("待培养讲者"),
+    LISTENER("听众");
+	
+#线上飞检讲者服务类型
+select * from flychk2_online_speaker_service;
+#线上飞检结果
+select * from flychk2_online_result;
+#线上飞检记录的讲者服务结果
+select * from flychk2_online_result_speaker;
+#线上飞检结果风险项
+select * from flychk2_online_result_risk;
+#线上飞检自审
+select * from flychk2_online_selfaudit;
