@@ -1,0 +1,30 @@
+库名：cms_action
+
+select * from action_task where id=375188;
+
+select * from action_meet_telecon order by createTime desc;
+select * from action_meet_telecon_detail order by createTime desc;
+select * from action_mee order by createTime desc;
+
+order by planBeginTime desc;
+select * from action_meet_telecon_reserved a
+inner join
+action_meet b
+on a.meetId=b.id
+order by a.planBeginTime desc;266318
+
+select * from action_meet where id=266318;
+select * from action_meet_telecon_reserved where meetId=266318;
+
+select * from action_task where id=375349;
+
+#参会人员表
+select id,manName,manType,meetId,sectionOfficeId,signType,proofState from action_meet_attendee where meetId=266399 and manName in ('黄小可','黄小乐','黄小花');
+select * from action_meet_attendee;
+select * from `cms_action`.`action_meet_telecon_detail` order by id desc;
+select * from action_task_meetplan where taskId=375356;
+
+#计划会议任务表
+select * from action_task_meetplan where taskId=375347;
+
+select * from action_task where id=375418;

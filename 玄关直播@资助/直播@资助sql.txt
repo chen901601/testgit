@@ -1,0 +1,29 @@
+库名：dragon_act/dragon_action
+
+select * from dragon_act.support_award_config;
+
+select * from dragon_act.support_live_config; 
+ #直播要求时长配置
+
+select * from dragon_act.support_apply;
+
+select * from dragon_act.support_apply_subject;
+
+select * from dragon_act.support_apply_speaker;
+
+
+select * from dragon_finance.finance_remit_plan order by createTime desc; 
+ #汇款计划表
+
+select * from dragon_finance.finance_remit_plan where id in(64,65,66);
+
+select * from dragon_finance.finance_payment_doctor order by createTime desc;
+select * from dragon_action.action_contract_live_doctor order by createTime desc;
+
+select * from dragon_action.action_task order by createTime desc;
+
+select * from dragon_action.action_contract order by createTime desc; 
+#玄关合同表
+
+
+select * from dragon_customer.cus_doctor where name = '黄小乐' limit 10; 

@@ -1,0 +1,67 @@
+库名：cms_gsp
+
+select * from gsp_stock_check;  #库存检查
+
+
+select id,conserveNo,conserveType,breedId,batchNo,conservePeriod from gsp_stock_conserve where 
+batchNo='18C10878L' order by conservePeriod;#库存养护
+
+
+
+select * from gsp_stock_conserve_detail where conserveNo in
+(
+select conserveNo from gsp_stock_conserve_detail group by conserveNo having count(conserveNo)>1);#库存养护明细
+
+
+
+select id,companyId,warehouseId storeroomId,storageLocationId,breedCode,batchNumberCode,totalCount,availableCount,goodsState,testResults,entryDate,postId,expiryDate from gsp_goods_stock where GoodsState ='QUALIFIED' and batchNumberCode='18C10878L';  #库存表
+
+
+
+select * from gsp_stock_conserve;
+
+select * from gsp_breed where billType = 1; #品种表  inLibraryTime 在库时间
+
+
+
+select * from gsp_breed_batch_preserve where billType = 1;#批号
+
+
+
+select * from gsp_stock_conserve where conserveNo='IM202005200017';
+
+
+
+#多表查询品种、批号、库存
+
+select s.id,s.entryDate as '入库日期',t.inLibraryTime as '在库时间',t.expiryDate as '批号有效期',s.breedCode as '品种编号',
+s.batchNumberCode as '品种批号',s.totalCount,s.availableCount,
+
+t.chineseName,t.maintainType as '养护类型',s.warehouseId,s.storeroomId,s.storageLocationId,s.testResults,s.postId,s.goodsState,s.expiryDate,s.companyId
+ 
+from
+ 
+ (select b.chineseName,b.inLibraryTime,
+p.breedCode,p.expiryDate,p.batchNo,b.maintainType
+	
+  from 
+   gsp_breed b right join gsp_breed_batch_preserve p
+
+    on b.code=p.breedCode 
+    where b.billType = 1 and p.billType = 1) t 
+    
+right join gsp_goods_stock s
+on s.batchNumberCode=t.batchNo
+where s.goodsState='QUALIFIED'
+and s.batchNumberCode='18C10878L';
+
+
+
+select * from gsp_warehouse where id=1;#仓库
+
+select * from gsp_storeroom where id=1;#库房
+
+select * from gsp_storage_location where id=2;#库位
+
+
+select * from gsp_sale_order_receivable;

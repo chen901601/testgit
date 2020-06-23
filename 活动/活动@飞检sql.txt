@@ -1,0 +1,82 @@
+库名：cms_act
+
+Flychk2Status {
+    EXECUTE_WAIT("待执行"),
+    EXECUTE_UNDERWAY("执行中"),
+    RECHECK_WAIT("待复核"),
+    RECHECK_UNDERWAY("复核中"),
+    RESULT_WAIT_CONFIRM("待确认飞检结论"),
+    APPEAL_UNDERWAY("申诉中"),
+    COMPLETE("已结束"),
+    NOT_DO("未执行"), #新飞检没有这样状态
+    MEET_CANCEL("会议已取消");#新飞检没有这样状态
+		CANCEL("飞检已取消");#线上会议已取消，当飞机员不足时会自动取消
+		
+select id,actSource,actId,actName,meetClassId,meetClassName,meetStartTime,meetEndTime,`status`,type from flychk2_act where actId=	19437;	
+select id,actSource,actId,actName,meetClassId,meetClassName,meetStartTime,meetEndTime,`status`,type from flychk2_act order by createTime desc;  #飞检表524
+select * from cms_act.flychk2_result order by flyChkId desc;#线下飞检结果记录表  502  503  
+#线上飞检讲者服务类型
+select * from flychk2_online_speaker_service;
+#线上飞检结果
+select * from flychk2_online_result order by flyChkId desc;526
+#线上飞检记录的讲者服务结果
+select * from flychk2_online_result_speaker order by flyChkResultId desc;28
+#线上飞检结果风险项
+select * from flychk2_online_result_risk;
+#线上飞检自审
+select * from flychk2_online_selfaudit;
+
+#区域活动表
+select * from cms_act.act_area order by createTime desc limit 100;
+select * from cms_act.act_area where id=19466;
+#行为任务表
+select * from cms_action.action_task order by createTime desc limit 100;
+select * from cms_action.action_task where id=375507;
+#会议
+select * from cms_action.action_meet order by createTime desc;
+#记录视频真实数据
+select * from cms_action.action_meet_telecon_video where meetId=266528;
+
+活动关联议程查询：
+select *from cms_act.act_agenda where sourceId=19437;#活动议程表
+select * from cms_act.act_agenda_session where agendaId=3336;#议程场次表
+select * from cms_act.act_agenda_session_detail where agendaSessionId=1357;#活动议程场次明细  agendaSessionId 关联场次id   agendaId 关联议程id
+select * from cms_act.act_agenda_session_detail_related where agendaId=822 ;#议程关联人    场次明细id=sessionDetailId  场次id=sessionId 议程id=agendaId  关系人id=relateId
+select * from cms_act.act_area where name='草稿状态';#meetClassId
+
+select a.id,a.actSource,a.actId,a.actName,a.meetClassId,a.meetClassName,a.meetStartTime,a.meetEndTime,a.`status`,a.type,b.mark,b.auditStatus
+from 
+flychk2_act a left join flychk2_result b
+on a.id=b.flyChkId
+order by a.meetStartTime desc;
+
+select * from cms_action.action_meet where id=266378;
+select * from cms_action.action_task where id=375334;
+select * from cms_act.act_area where id=19297;
+select id,name,planStartTime,flyChkFlag from cms_act.act_area ORDER BY createTime desc;   
+select * from cms_act.act_area where id=19075;
+select id,planStartTime,endTime,sourceId from cms_action.action_task where id=375144;
+select taskId from cms_action.action_meet where id=266235;
+
+活动关联议程查询：
+select *from cms_act.act_agenda where sourceId=17508;#活动议程表
+select * from cms_act.act_agenda_session where agendaId=822;#议程场次表
+select * from cms_act.act_agenda_session_detail where agendaSessionId=1357;#活动议程场次明细  agendaSessionId 关联场次id   agendaId 关联议程id
+select * from cms_act.act_agenda_session_detail_related where agendaId=822 ;#议程关联人    场次明细id=sessionDetailId  场次id=sessionId 议程id=agendaId  关系人id=relateId
+
+select * from cms_action.action_task where sourceId=19078;
+
+select * from cms_hr.basic_department where `name` = '广州区域';-- 辽宁区域 254  西藏康哲辽宁区域  662
+select * from cms_basic.basic_breed_group where goodsName = '黛力新'; #黛力新-6  新活素 13 亿活3  丹参酮1
+select * from cms_cost.cost_plan_breed_group_price;#添加品种组单价数据，需要对应的部门id和品种id
+select * from act_area order by createTime desc;
+
+select * from cms_customer.basic_doctor_breedgroup limit 100; #客户类型
+select customerClassify from cms_customer.basic_doctor_breedgroup;
+
+act_agenda_type_setting,act_agenda_type_meet_role  前面是议程类型，后面是议程类别关联角色
+
+select * from act_agenda_type_setting;
+select * from act_agenda_type_meet_role;   
+
+

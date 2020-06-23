@@ -1,0 +1,102 @@
+库名：cms_mes
+
+#得分配置表
+select * from mes_score_setting;
+
+#得分配置系统
+select * from mes_score_system_setting where scoreSettingId = 1 and evaluateTypeId = 1;
+
+#得分配置主观
+select * from mes_score_subjective_setting;
+
+#评价类型
+select * from mes_evaluate_type;
+
+#岗位级别
+select * from mes_post_level_setting;
+
+
+#区域活动评价表
+select * from mes_act_area_comment;
+
+#区域活动评价明细
+select * from mes_comment_detail where commentId = 5;
+
+#系统评价得分明细
+select * from mes_system_score_detail where sourceId = 1000;
+
+#主观评价得分明细
+select * from mes_subjective_score_detail where commentDetailId = 28077;
+
+#活动评价职位表
+select * from cms_mes.mes_post_level_setting;
+
+#配置需要评价的活动类型
+select * from mes_score_setting;
+
+#活动中计划邀请的人数
+select id,name,planMeetCount from cms_act.act_area where id = 19350;
+
+#计划会议任务表
+select * from cms_action.action_task_meetplan where taskId=375369;
+
+#与会人员表数据库插入数据：（说明：version=100代表是数据库插入数据）
+select * from cms_action.action_meet_attendee where meetId in (266427) order by id asc; #注意查出最大的自增id  266423  266420  324661
+
+#参会人员时长表：
+select * from cms_action.action_meet_telecon_detail where meetId=266427;
+
+#配置视频会议参会观众必须满足的时长表：
+select * from cms_action.action_meet_join_time_limit;
+#配置的有效合同角色
+select * from cms_action.contract_role_config;
+
+
+select hospitalId,id,name,sectionOfficeId,lecturerLevel,proofState from cms_customer.basic_doctor where state='NORMAL' and proofState = 1 and openId is not null and hospitalId is not null limit 30;
+select * from cms_customer.basic_doctor where state='NORMAL' and proofState = 1 and openId<>'' and name='黄小可' limit 10;
+
+#查询客户表并将数据插入到参与人员表里面
+INSERT INTO cms_action.action_meet_attendee 
+( `version`, `createTime`, `updateTime`, `creatorId`, `hospitalId`, `isInvite`, `isJoin`, `manId`, `manName`, `manType`, `meetId`, `sectionOfficeId`, `signDate`,  `roleType`, `inviteDate`, `lecturerLevel`, deviceType, `proofState`)
+SELECT 
+1,'2020-06-16 10:22:47', '2020-06-16 10:24:31', 1359, hospitalId, 'NO', 'YES', id, name, 'CUSTOM', 266501, sectionOfficeId, '2020-06-16 10:24:31',  'GUEST', '2020-06-16 10:22:47', lecturerLevel, 'DoctorOrg', 1 
+from cms_customer.basic_doctor where state='NORMAL' and proofState = 1 and openId<>'' and hospitalId is not null limit 0,1;
+
+#计算参会时长
+select memberName,TIMESTAMPDIFF(MINUTE, joinTime, unJoinTime) as "参会时长",id,joinTime,unJoinTime,meetId,sectionOfficeId from 
+cms_action.action_meet_telecon_detail where meetId=266505 AND sectionOfficeId is not null;
+
+#计算参会时长
+select * from cms_action.action_meet_telecon_detail where meetId=266505;
+select * from cms_action.action_meet_telecon_detail where memberName='凌素芬' order by id desc;
+
+#参会人员表 
+select id,hospitalId,isInvite,isJoin,isSign,manId,manName,manType,meetId,sectionOfficeId,roleType,lecturerLevel,proofState 
+from cms_action.action_meet_attendee where meetId= 266505 and roleType='GUEST' order by sectionOfficeId desc;
+
+#查询客户表并将数据插入到参与人员时长表里面
+INSERT INTO `cms_action`.`action_meet_telecon_detail`
+( `version`, `dataPartnerType`, `hospitalId`, `joinTime`, `memberName`, `memberOpenId`, `phoneType`, `sectionOfficeId`, `teleconId`, `unJoinTime`, `meetId`, `createTime`, `updateTime`, `creatorId`, `updaterId`, `deviceType`) 
+select
+4, 'DoctorOrg', hospitalId, '2020-06-16 15:58:04', name, openId, 'Network', sectionOfficeId, 26451, '2020-06-16 16:02:35', 266501, '2020-06-16 16:00:16', '2020-06-16 16:08:02', -1, -1, 'ANDROID'
+from cms_customer.basic_doctor where state='NORMAL' and proofState = 1 and openId<>'' and hospitalId is not null limit 0,1;
+
+#医生表
+select id,name,sectionOfficeId,proofState,hospitalId from cms_customer.basic_doctor where proofState=1 and name in ('黄小可','黄小乐','凌小小','凌素芬') and openId<>''; 
+#黄小花 7  黄小可1 200507160002 黄小乐8 200108221943  凌小小1509008148112  凌素芬200108220742
+#科室表
+select* from cms_customer.basic_section_office where name in ('精神心理科','报告解读科'); #1,2
+
+
+#医院级别
+select * from cms_customer.cus_hospital_grade where drugOrgLevelName is not null;
+
+#医院类型 
+select * from cms_customer.cus_hospital_type;
+
+#医院  通过gradeId与医院级别关联  通过typeId跟医院类型关联
+select id,`name`,gradeId,typeId from cms_customer.basic_hospital where id in(1509008148112,200108221943,200507160002) ;  #40
+
+#客户分类的枚举类型
+select * from cms_customer.basic_doctor_breedgroup;#customerClassify
+select * from cms_customer.basic_doctor where proofState=1 and name in ('黄小可','黄小乐','凌小小','凌素芬') and openId<>''; 
