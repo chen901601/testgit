@@ -1,0 +1,22 @@
+Content-Type：application/form-urlencode  使用data
+Content-Type：application/json  使用json
+```
+json 表示使用application/json方式提交请求
+data 表示使用application/form-urlencode方式提交请求
+![image.png](https://upload-images.jianshu.io/upload_images/4647858-bd0f7521027ee633.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![用Data.png](https://upload-images.jianshu.io/upload_images/4647858-3aaa26291b6de3e0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+可用json
+
+https://www.cnblogs.com/JohnABC/p/5702998.html
+
+```
+Json.dump()用于将dict类型的数据转成str，因为如果直接将dict类型的数据写入json文件中会发生报错，因此在将数据写入时需要用到该函数。将python原始类型向json类型的转化
+Json.load()用于将str类型的数据转成dict。把str转换成dict，将json原始类型向python类型的转化
+```
+
+```
+(1)json.dumps()函数是将一个Python数据类型列表进行json格式的编码（可以这么理解，json.dumps()函数是将字典转化为字符串）
+(2)json.loads()函数是将json格式数据转换为字典（可以这么理解，json.loads()函数是将字符串转化为字典）
+```
+```***只有返回是json 才能用.json()返（dict格式） 返回的是html，则只能用.text返（str格式）```
